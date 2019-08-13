@@ -1,7 +1,18 @@
-all: uhttpd
+LDFLAGS +=
+CFLAGS += -Wall --std=gnu99
+
+#-lcrypto must follow -lssl
+OBJ := simplehttpd.o http_parser.o
+LIB := -Wl,--export-dynamic -L/lib/i386-linux-gnu/ -ldl 
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+all: $(OBJ)
+	$(CC) -o uhttpd $(LDFLAGS) $(LIB) $(OBJ)
 
 clean:
-	-rm ./*.o uhttpd
+	rm -f *.o *.so uhttpd
 
-uhttpd: common.c http_parser.c simplehttpd.c
-	$(CC) -o uhttpd common.c http_parser.c simplehttpd.c -lcrypto -lssl   
+romfs:
+	@echo "uhttpd romfs"

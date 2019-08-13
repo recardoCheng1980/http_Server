@@ -12,7 +12,6 @@
 #include <time.h>
 #include "http_parser.h"
 #include "uthash.h"
-#include "common.h"
 
 #define array_size(x) (sizeof(x) / sizeof(x[0]))
 
@@ -29,9 +28,6 @@
 #define UH_HTTP_MSG_POST  2
 
 #define foreach_header(i, h) for( i = 0; (i + 1) < (sizeof(h) / sizeof(h[0])) && h[i]; i += 2 )
-
-SSL *client_ssl[FD_SETSIZE]={0};
-int client_state[FD_SETSIZE]={0}; 
 
 
 typedef struct _client_struct {
@@ -81,8 +77,6 @@ void log_print(char* logline)
   if (fp==NULL)
     return;
 
-  fprintf(stdout, "%s\n", logline);
-  fflush(stdout);
   fprintf(fp ,"%s\n", logline);
   fflush(fp);
   SESSION_TRACKER++;
@@ -162,7 +156,7 @@ void http_redir_response(int filedes)
   char client_ip[MAXIP]= {0};
   socklen_t addr_size=sizeof(struct sockaddr_in);
   struct sockaddr_in addr;
-  int res=getpeername(filedes, (struct sockaddr*)&addr, &addr_size);
+  int res= getpeername(filedes, (struct sockaddr*)&addr, &addr_size);
   int i=0;
 
   strcpy(client_ip, inet_ntoa(addr.sin_addr));
@@ -352,7 +346,8 @@ int http_header_parse(int filedes, char *buffer, int buflen)
 
 
 
-int make_socket (uint16_t port, char* address)
+int
+make_socket (uint16_t port, char* address)
 {
   int sock;
   struct sockaddr_in name;
@@ -407,8 +402,6 @@ int main (int argc, char **argv)
   int i;
   size_t size;
   int opt;
-  SSL_CTX *ctx;
-
 
   while( (opt = getopt(argc, argv, "a:p:n:N:r:")) > 0) {
     switch (opt) {
@@ -435,24 +428,13 @@ int main (int argc, char **argv)
     }
   }
 
-  //Sanity check
-  if (address==NULL) {
-    log_print("address is required");
-    exit(0);
-  }
-
-  /* Build our SSL context*/                                                     
-  ctx=initialize_ctx();
-
-  SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL); 
-
-
   /* Create the socket and set it up to accept connections. */
   sock = make_socket (port, address);
   if (listen (sock, 64) < 0) {
     perror ("listen");
     exit (EXIT_FAILURE);
   }
+
 
   /* Initialize the set of active sockets. */
   FD_ZERO (&active_fd_set);
